@@ -1,11 +1,51 @@
 ---
-title: "exercise-24"
+title: “Exercise 24“
+author: Rachel Delorie
+format: html
+execute:
+  echo: true
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+```{r}
+library(readr)
+library(ggrepel)
+library(tidymodels)
+library(tidyverse)
+library(flextable)
+library(sf)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(broom)
+library(AOI)
+library(purrr)
+us_cities <- readr::read_csv("/Users/racheldelorie/github/exercise-24/data/uscities.csv")
+```
 
 ```{r}
-1 + 1
+cities_sf <- st_as_sf(us_cities, coords = c("lng", "lat"), crs = 4326)
+boundary <- aoi_get(state = "CO", county = "Larimer")
+
+larimer_county <- cities_sf %>% 
+  filter(county_name == "Larimer") %>% 
+  group_by(county_name)
+
+three_max <- larimer_county %>% 
+  slice_max(population, n = 3)
+
+ggplot() +
+  geom_sf(data = boundary, fill = NA, color = "black", size = 1) +             # County boundary, no fill
+  geom_sf(data = larimer_county, fill = "lightgray", color = "darkgray") +      # All cities, light fill
+  geom_sf(data = three_max, color = "red", size = 3) +                         # Top 3 cities, large red points
+  theme_void() +
+  coord_sf() +
+  labs(title = "Cities in Larimer County", 
+       caption = "Red points: 3 largest cities") +
+  theme(plot.title = element_text(hjust = 0.5))+
+geom_label_repel(
+    data = three_max,
+    aes(label = city, geometry = geometry),
+    stat = "sf_coordinates",
+    size = 3)
+
 ```
